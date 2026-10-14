@@ -84,14 +84,24 @@ td.memo{white-space:pre-wrap;word-break:break-all}
 .del{background:none;border:0;color:#9ca3af;cursor:pointer;font-size:13px}
 .empty{color:var(--sub);text-align:center;padding:20px}
 
+/* 모바일용 기록 카드 (PC에서는 표, 휴대폰에서는 카드) */
+.cards{display:none}
+.rec{border:1px solid var(--line);border-left:5px solid var(--sub);border-radius:12px;padding:11px 12px;margin-bottom:8px;background:#fff}
+.rec.ok{border-left-color:var(--ok)}
+.rec.need{border-left-color:var(--need);background:#fff7f7}
+.rec.done{border-left-color:var(--done)}
+.rec .r1{display:flex;align-items:center;gap:8px}
+.rec .fname{font-size:16px;font-weight:800;flex:1;min-width:0;word-break:keep-all}
+.rec .time{font-size:15px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.rec .memo{font-size:15px;line-height:1.5;margin:7px 0 8px;white-space:pre-wrap;word-break:break-all}
+.rec .memo.plain{color:var(--sub);font-size:14px}
+.rec .r3{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--sub)}
+.rec .del{padding:4px 2px}
+
 @media (max-width:640px){
   .filters{grid-template-columns:1fr 1fr}
-  table,tbody,tr,td{display:block;width:100%}
-  thead{display:none}
-  tr{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;padding:6px 10px}
-  td{border:0;padding:3px 0}
-  td::before{content:attr(data-l);display:inline-block;width:66px;color:var(--sub);font-size:12px}
-  td.memo::before{display:block}
+  .table-wrap{display:none}
+  .cards{display:block}
 }
 
 /* ── 입력창(모달) ── */
@@ -136,10 +146,8 @@ label.f{display:block;font-size:13px;font-weight:700;margin:10px 0 5px}
   #printHead p{font-size:12px;margin:0;color:#444}
   table{font-size:11px}
   th{background:#eee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  table,tbody,tr,td{display:revert!important}
-  thead{display:table-header-group!important}
-  tr{border:0!important;padding:0!important}
-  td::before{display:none!important}
+  .cards{display:none!important}
+  .table-wrap{display:block!important}
   td,th{padding:5px 6px}
   tr{page-break-inside:avoid}
 }
@@ -400,7 +408,21 @@ function renderBoard() {
     ? `<summary>아직 점검하지 않은 시설 ${unchecked.length}곳 보기</summary><p>${unchecked.map(f => esc(nm(f))).join(" · ")}</p>`
     : `<summary>모든 시설 점검 완료 🎉</summary>`;
 
-  $("list").innerHTML = rows.length ? `<table>
+  if (!rows.length) { $("list").innerHTML = `<p class="empty">조건에 맞는 점검 기록이 없습니다.</p>`; return; }
+
+  // 휴대폰: 한 기록 = 카드 한 장 (시설명·시각 → 확인내용 → 날짜·층·교사 순서로 중요한 것부터)
+  const cards = rows.map(r => {
+    const plain = r.status === "ok" && (!r.memo || r.memo === "이상없음");
+    return `<div class="rec ${r.status}">
+      <div class="r1"><span class="st ${r.status}">${STATUS[r.status]?.label || r.status}</span>
+        <span class="fname">${esc(r.facilityName)}</span><span class="time">${esc(r.checkTime)}</span></div>
+      <div class="memo ${plain ? "plain" : ""}">${esc(r.memo) || "-"}</div>
+      <div class="r3"><span>${dateLabel(r.date)} · ${r.floor}층 · ${esc(r.teacher)}</span>
+        <button class="del" data-del="${r.id}">삭제</button></div>
+    </div>`;
+  }).join("");
+
+  $("list").innerHTML = `<div class="cards">${cards}</div><div class="table-wrap"><table>
     <thead><tr><th>날짜</th><th>시각</th><th>층</th><th>시설</th><th>상태</th><th>확인내용</th><th>확인교사</th><th class="del"></th></tr></thead>
     <tbody>${rows.map(r => `<tr>
       <td data-l="날짜">${dateLabel(r.date)}</td>
@@ -411,7 +433,7 @@ function renderBoard() {
       <td data-l="확인내용" class="memo">${esc(r.memo) || "-"}</td>
       <td data-l="확인교사">${esc(r.teacher)}</td>
       <td class="del-cell"><button class="del" data-del="${r.id}">삭제</button></td>
-    </tr>`).join("")}</tbody></table>` : `<p class="empty">조건에 맞는 점검 기록이 없습니다.</p>`;
+    </tr>`).join("")}</tbody></table></div>`;
 }
 
 function renderAll() { renderTabs(); renderFloors(); renderPanel(); renderBoard(); }
