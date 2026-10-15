@@ -187,7 +187,10 @@ label.f{display:block;font-size:13px;font-weight:700;margin:10px 0 5px}
     <h1>정약용RAS 락랑페스타</h1>
     <div class="sub">현장 점검표 · 구리남양주교육지원청</div>
   </div>
-  <button class="me" id="meBtn">점검자 설정</button>
+  <div style="display:flex;gap:6px">
+    <button class="me" id="installMini" style="display:none" aria-label="홈 화면에 추가">📲</button>
+    <button class="me" id="meBtn">점검자 설정</button>
+  </div>
 </header>
 <div class="install" id="installBar">
   <img src="icon-192.png" alt="">
@@ -626,7 +629,75 @@ $("xlsBtn").onclick = exportExcel;
 $("meBtn").onclick = () => { const n = prompt("점검자 이름을 입력하세요", teacher); if (n !== null && n.trim()) { setTeacher(n); toast("점검자: " + teacher); } };
 
 /* =========================================================
-   ⑧ 시작
+   ⑧ 홈 화면 아이콘 추가
+      - 안드로이드 크롬·삼성인터넷: 버튼 → 바로 설치 창
+      - 아이폰: 애플이 막아둬서 자동 설치 불가 → 방법 안내
+      - 카카오톡 등 앱 안 브라우저: 설치 불가 → 바깥 브라우저로 열기
+   ========================================================= */
+const ua = navigator.userAgent;
+const isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const isKakao = /KAKAOTALK/i.test(ua);
+const isInApp = isKakao || /NAVER|Instagram|FBAN|FBAV|Line\//i.test(ua);
+const isStandalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isMobile = /Android|iPhone|iPad|iPod/i.test(ua) || isIOS;
+const HIDE_KEY = "rakrang_install_hide";
+let hidden = false;
+try { hidden = localStorage.getItem(HIDE_KEY) === "1"; } catch (e) {}
+
+function showGuide(html) {
+  $("modal").innerHTML = `<div class="guide">${html}
+    <button class="btn blue save" id="mClose">확인</button></div>`;
+  $("overlay").classList.add("on");
+}
+
+function install() {
+  if (isKakao) {   // 카카오톡 안에서는 설치가 안 돼서, 휴대폰 기본 브라우저로 다시 엽니다.
+    location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(location.href);
+    return;
+  }
+  if (isInApp) {
+    return showGuide(`<h3>브라우저에서 열어주세요</h3><ol>
+      <li>화면 오른쪽 위(또는 아래) <span class="key">⋮</span> 메뉴</li>
+      <li><b>다른 브라우저로 열기</b> (크롬·사파리)</li>
+      <li>열린 화면에서 다시 <b>추가</b> 버튼</li></ol>`);
+  }
+  if (window.__installEvt) {           // 안드로이드: 진짜 버튼 하나로 설치
+    const evt = window.__installEvt;
+    evt.prompt();
+    evt.userChoice.then(c => {
+      window.__installEvt = null;
+      if (c.outcome === "accepted") { $("installBar").classList.remove("on"); toast("홈 화면에 추가했습니다"); }
+    });
+    return;
+  }
+  if (isIOS) {
+    return showGuide(`<h3>아이폰 홈 화면에 추가</h3><ol>
+      <li><b>사파리</b>로 이 페이지를 연 상태에서</li>
+      <li>아래(또는 위)의 공유 버튼 <span class="key">⬆︎</span> 누르기</li>
+      <li>메뉴를 내려 <b>홈 화면에 추가</b> 선택</li>
+      <li>오른쪽 위 <b>추가</b> 누르기</li></ol>
+      <p class="note">아이폰은 애플 정책상 웹페이지가 스스로 아이콘을 만들 수 없어서, 이 방법으로 한 번만 추가해 주세요.</p>`);
+  }
+  showGuide(`<h3>홈 화면에 추가</h3><ol>
+    <li>브라우저 오른쪽 위 <span class="key">⋮</span> 메뉴</li>
+    <li><b>홈 화면에 추가</b> 또는 <b>앱 설치</b> 선택</li></ol>
+    <p class="note">이미 추가했다면 홈 화면에서 '락랑점검' 아이콘을 찾아보세요.</p>`);
+}
+
+if (!isStandalone && !hidden && (isMobile || window.__installEvt)) $("installBar").classList.add("on");
+window.addEventListener("beforeinstallprompt", () => { if (!isStandalone && !hidden) $("installBar").classList.add("on"); });
+window.addEventListener("appinstalled", () => $("installBar").classList.remove("on"));
+$("installBtn").onclick = install;
+// 띠를 닫아도 위쪽 📲 버튼으로 언제든 다시 추가할 수 있게
+if (!isStandalone && isMobile) $("installMini").style.display = "inline-block";
+$("installMini").onclick = install;
+$("installNo").onclick = () => {
+  $("installBar").classList.remove("on");
+  try { localStorage.setItem(HIDE_KEY, "1"); } catch (e) {}
+};
+
+/* =========================================================
+   ⑨ 시작
    ========================================================= */
 setTeacher(teacher);
 fillDateFilter();
