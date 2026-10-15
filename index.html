@@ -4,6 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>락랑페스타 현장점검</title>
+<!-- 홈 화면 아이콘(앱처럼 설치) -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#1e3a8a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="락랑점검">
+<script>
+  // 크롬이 "설치할 수 있어요" 신호를 보내면 붙잡아 둡니다. (버튼을 눌렀을 때 꺼내 씀)
+  window.__installEvt = null;
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); window.__installEvt = e; });
+  if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js");
+</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -131,6 +144,20 @@ label.f{display:block;font-size:13px;font-weight:700;margin:10px 0 5px}
 .hist h4{margin:0 0 6px;font-size:13px;color:var(--sub)}
 .hist div{padding:5px 0;border-bottom:1px solid var(--bg);line-height:1.5}
 
+/* ── 홈 화면 추가 띠 ── */
+.install{display:none;align-items:center;gap:10px;background:#eef2ff;border-bottom:1px solid #c7d2fe;padding:9px 16px;font-size:14px}
+.install.on{display:flex}
+.install img{width:34px;height:34px;border-radius:8px;flex:none}
+.install .t{flex:1;line-height:1.35}
+.install .t small{display:block;color:var(--sub);font-size:12px}
+.install .go{background:var(--accent);color:#fff;border:0;border-radius:999px;padding:8px 14px;font-weight:800;font-size:14px;cursor:pointer;white-space:nowrap}
+.install .no{background:none;border:0;color:var(--sub);font-size:18px;cursor:pointer;padding:4px}
+.guide{padding:16px}
+.guide h3{margin:0 0 12px;font-size:18px}
+.guide ol{margin:0;padding-left:22px;line-height:1.8;font-size:15px}
+.guide .key{display:inline-block;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:0 6px;font-weight:700}
+.guide .note{margin-top:12px;font-size:13px;color:var(--sub);line-height:1.5}
+
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
 
@@ -162,6 +189,12 @@ label.f{display:block;font-size:13px;font-weight:700;margin:10px 0 5px}
   </div>
   <button class="me" id="meBtn">점검자 설정</button>
 </header>
+<div class="install" id="installBar">
+  <img src="icon-192.png" alt="">
+  <div class="t"><b>홈 화면에 아이콘 추가</b><small>다음부터 앱처럼 바로 열려요</small></div>
+  <button class="go" id="installBtn">추가</button>
+  <button class="no" id="installNo" aria-label="닫기">✕</button>
+</div>
 <div class="demo" id="demoBar" style="display:none">체험 모드 — Firebase 설정 전이라 이 기기에만 저장됩니다.</div>
 <div class="err" id="errBar"></div>
 
